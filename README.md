@@ -1,0 +1,2 @@
+# animition_for_many_attribute
+一个简单的原生js封装的可以操作DOM今行该元素多个属性同时变化,并可以连续执行动画,详细见代码注释
