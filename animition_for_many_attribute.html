@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>动画,使一个元素能够多个属性同时改变</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+        }
+
+        div {
+            height: 100px;
+            width: 100px;
+            background: red;
+            position: relative;
+            margin-bottom: 20px;
+        }
+
+    </style>
+</head>
+<body>
+<div id="div1"></div>
+<button id="but">点击开始运动</button>
+<script>
+    //获取元素
+    var div1 = document.getElementById("div1");
+    var but1 = document.getElementById("but");
+    //声明标记,用于节流判断,初始值为true,可以点击
+    var flag = true;
+    but1.onclick = function () {
+        if (flag) {
+            animation(div1, {width: 600, left: 200, opacity: 0.3}, function () {
+                animation(div1, {left: 900, top: 100, opacity: 1}, function () {
+                        flag = true   //所有函数执行完毕flag赋值为true,允许再次点击
+                });
+            });
+        }
+        flag = false;   //点击操作后,flag为flash,立即点击函数不执行.
+    };
+
+    /**
+     *
+     * @param element   动画执行的元素
+     * @param obj       用于传入元素的多个需要改变的属性
+     * @param fn        在动画完成后需要再执行的函数,可选参数
+     */
+    function animation(element, obj, fn) {
+     //清除定时器,防止同一个属性的多个动画同时执行引起的加速.
+        clearInterval(element.timer);
+        //集中声明一些需要的变量,减少循环中不断重复声明造成的性能消耗
+        //current,属性当前的样式
+        //target,属性目标样式,即需要改变到的样式
+        //step,每次setInterval执行后current向target移动的位置
+        //flag,用于下面判断改元素所有需要改变的属性是否都执行完毕
+        var current, target, step, flag;
+        //创建不断运动的定时器
+        element.timer = setInterval(function () {
+            //标记始值为true
+            flag = true;
+            //多个属性通过对象形式传递,遍历对象
+            for (var k in obj) {
+                //判断特殊属性,如opacity,zIndex,下面仅用opacity为例,需要其他属性添加 else if 即可
+                if (k === "opacity") {
+                    //opacity 系统默认值为1,取值范围为0-1,js在计算有小数点的算数时不精确,且opacity值特别小,所以current乘以100
+                    current = getStyle(element, k) * 100;
+                    //target与current同比例增加
+                    target = obj[k] * 100;
+                    //step随改变大小而改变,原值改变越大速度越快,改变越小速度越小,在不断移动中表现为先快后慢
+                    step = (target - current) / 10;
+                    // 系统中像素单位为整数,避免current移动后为小数,需要为step取整
+                    step = step > 0 ? Math.ceil(step) : Math.floor(step);
+                    //current每个循环位移改变
+                    current += step;
+                    //把current赋值给当前元素对应的属性,这里因为之前扩大了100倍,所以最后需要缩小对应的倍数
+                    element.style[k] = current / 100;
+                } else {
+                    //用getStyle获取元素属性时,带单位,如100px,需要把把带数字的字符串改为数字parseInt.
+                    current = parseInt(getStyle(element, k));
+                    target = obj[k];
+                    step = (target - current) / 10;
+                    step = step > 0 ? Math.ceil(step) : Math.floor(step);
+                    current += step;
+                    //这里绝大多数操作的是宽高等属性,需要加上单位"px"
+                    element.style[k] = current + "px";
+                }
+                 //  判断所有目标元素是否都改变结束,一旦有元素未结束,标记为flash,如果没有可以改变的元素,则if不执行,flag为初始值true
+                if (current !== target) {
+                    flag = false;
+                }
+            }
+            //整个循环结束判断flag值
+            if (flag) {
+                //停止计时器
+                clearInterval(element.timer);
+                //在动画执行完成后执行下面的函数
+                fn && fn();
+            }
+        }, 40)
+
+    }
+
+    function getStyle(tag, styleName) {
+        if (tag.currentStyle) {
+            //进入if，说明结果为对象，直接使用
+            return tag.currentStyle[styleName];
+        } else {
+            //说明不支持currentStyle，使用getComputedStyle即可
+            return getComputedStyle(tag)[styleName];
+        }
+    }
+</script>
+
+</body>
+</html>
